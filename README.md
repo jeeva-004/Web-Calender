@@ -1,47 +1,69 @@
-# 🗓️ Wall Calendar — Interactive React Component
+# 🗓️ Interactive Wall Calendar
 
-A polished, interactive wall calendar component built with React + Vite.
+A beautiful, fully responsive, and heavily interactive React component that faithfully replicates the physical experience of a wall calendar right in your browser. 
 
-## Features
+The aesthetic is built tightly over a modern geometric-hero design and integrates immersive 3D CSS transforms to bring genuine tactile interactions to web elements—highlighted by an authentic 3d-accelerated page-flipping animation when cycling between months.
 
-- **Wall Calendar Aesthetic** — Hero image section at the top with a dynamic gradient + icon per month, and decorative spiral rings, emulating a physical wall calendar
-- **Day Range Selector** — Click a start date, then click an end date. Days in-between are highlighted. A badge shows the selected range and duration. Click "✕" to clear.
-- **Integrated Notes Section** — Click "📝 Notes" to open the notes panel. Add general month notes or day-specific notes. Right-click any day to jump directly to that day's notes tab.
-- **Holiday Markers** — Key holidays are color-coded (red) with a tooltip on hover.
-- **Today Highlight** — Today's date is always highlighted in blue.
-- **Dark / Light Theme** — Toggle with ☀️/🌙 button in the hero area.
-- **Flip Animation** — Smooth flip animation when navigating between months.
-- **Fully Responsive** — Adapts gracefully from mobile to desktop.
+## 🎥 Previews
 
-## Getting Started
+### Desktop View
+<video src="./src/videos/desktop-view.mp4" controls width="100%"></video>
+
+### Mobile View
+<video src="./src/videos/mobile-view.mp4" controls width="100%"></video>
+
+## ✨ Core Features
+
+* **3D Page Swapping**: Rotating the viewpoint month dynamically translates into a hardware-accelerated 3D flip over the top X-axis, mirroring how one flips a physical calendar over its binding.
+* **Responsive Visual Hierarchy**: Uses a complex flex/grid structural order. Features a distinct two-column view (Notes on left, Grid on right) on Desktop, which smoothly collapses and reorders the DOM natively for Mobile viewing (Hero -> Grid -> Notes).
+* **Date Range Selector**: Built-in state logic cleanly captures "From" and "To" active date highlights, gracefully styling continuous periods across the month grid.
+* **Integrated Notes Platform**: Functional jotting space baked seamlessly into the UI.
+* **Spiral-bound Aesthetic**: Features a custom-rendered CSS binding clip modeled accurately for varying device resolutions using dynamic flexbox spacing algorithms.
+
+## 🛠️ Technology Stack
+
+* **React 18**: Function components and reactive state hooks (`useState`, `useEffect`) manage the fluid month-range logic and DOM classes.
+* **Vanilla CSS3**: Beautifully curated with 0 utility libraries. Styled explicitly through `WallCalendar.css` leveraging:
+  * CSS Grid arrays
+  * `transform-style: preserve-3d` / `perspective` matrices for naturalistic flips
+  * `@media` breakpoints for spatial integrity
+* **Vite**: Rapid development environment integration and production-ready bundler optimizations.
+
+## 🚀 Getting Started
+
+This template requires **Node.js v18+**.
+
+### 1. Installation
+
+Clone down the repository and pull the initial dependencies.
 
 ```bash
 npm install
+```
+
+### 2. Local Development Server
+
+Fire up the Vite development environment for instant Hot Module Relocating (HMR).
+
+```bash
 npm run dev
 ```
 
-Then open [http://localhost:5173](http://localhost:5173).
+### 3. Building for Production
 
-## Usage Tips
+Output highly optimized and minified static assets to your `dist/` directory.
 
-| Action | Result |
-|---|---|
-| Click a day | Set range start or end |
-| Right-click a day | Open note for that day |
-| ☀️/🌙 button | Toggle dark/light theme |
-| "Today" button | Jump back to current month |
-| "📝 Notes" button | Show/hide notes panel |
+```bash
+npm run build
+```
 
-## Tech Stack
+## 📐 Component Architecture Explained
 
-- React 18
-- Vite 5
-- CSS-in-JS (style tag inside component)
-- Google Fonts: Playfair Display + DM Sans
+The main structural flow is strictly split:
+* `<div className="cal-controls">`: Top-level command array triggering date flips outside of the rotating DOM block to prevent UX clipping.
+* `<div className="spiral-container">`: Dynamically spaced structural `.spiral-loop` wireframes. Auto-hides on mobile breakpoints for non-overlapping mobile ratios.
+* `<div className="calendar-card">`: Contains the Hero image block (with SVG geometric mask overlay) and the localized payload (`.cal-body`), actively responding to the 3D `.flip-start` class sequence. 
 
-## Design Decisions
+## 📝 License
 
-- Gradient hero images per month emulate seasonal photography without requiring external images
-- Floating icon animation adds life to the hero
-- Notes are keyed by date string (`YYYY-MM-DD`) or `"general"` for month notes
-- All state is in-memory (no localStorage per task spec)
+This project is open-source and free to be edited or configured into standard dashboard setups or personal React application architectures!

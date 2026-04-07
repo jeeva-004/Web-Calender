@@ -112,7 +112,7 @@
   overflow: hidden;
   position: relative;
   transform-origin: top center;
-  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.6s;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s;
   backface-visibility: hidden;
   transform-style: preserve-3d;
 }
@@ -325,6 +325,12 @@
   transform: scale(1.1);
 }
 
+.day-cell.today:hover,
+.day-cell.range-start:hover,
+.day-cell.range-end:hover {
+  background: #156da8; /* dark shde for hover */
+}
+
 .day-cell.today {
   background: #1b85d3;
   color: white;
@@ -361,7 +367,7 @@
 
 @media (max-width: 768px) {
   .cal-root {
-    padding: 15px 15px; /* Greatly reduced top padding */
+    padding: 15px 15px; /* reduce space form top */
   }
 
   .cal-body {

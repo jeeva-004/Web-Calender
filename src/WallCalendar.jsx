@@ -20,13 +20,14 @@ const MONTH_IMAGES = [
   { img: "https://images.unsplash.com/photo-1433086966358-54859d0ed716?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" },
   { img: "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" },
   { img: "https://images.unsplash.com/photo-1465189684280-6a8fa9b19a7a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" },
-  { img: "https://images.unsplash.com/photo-1483728642387-6c3abe6c6b22?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" },
+  { img: "https://images.unsplash.com/photo-1512389142860-9c449e58a543?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" },
 ];
 
 const HOLIDAYS = {
   "1-1": "New Year", "2-14": "Valentine's", "12-25": "Christmas"
 };
 
+// calculte days
 function getDaysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
 }
@@ -54,14 +55,22 @@ export default function WallCalendar() {
   const [rangeEnd, setRangeEnd] = useState(null);
   const [hoverDate, setHoverDate] = useState(null);
   
-  const [notes, setNotes] = useState(Array(6).fill(""));
+  const [notes, setNotes] = useState(() => {
+    const saved = localStorage.getItem("calendarNotes");
+    return saved ? JSON.parse(saved) : Array(6).fill("");
+  });
   const [flippingClass, setFlippingClass] = useState("");
+
+  useEffect(() => {
+    localStorage.setItem("calendarNotes", JSON.stringify(notes));
+  }, [notes]);
   
   const monthImg = MONTH_IMAGES[viewMonth];
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDay = getFirstDayOfMonth(viewYear, viewMonth);
   const daysInPrevMonth = getDaysInMonth(viewYear, viewMonth === 0 ? 11 : viewMonth - 1);
 
+  // filping triger
   const triggerFlip = (directionCallback) => {
     if (flippingClass) return;
     setFlippingClass("flip-start");
@@ -72,7 +81,7 @@ export default function WallCalendar() {
       
       setTimeout(() => {
         setFlippingClass("");
-      }, 400); 
+      }, 50); 
     }, 400); 
   };
 
@@ -94,6 +103,7 @@ export default function WallCalendar() {
     });
   };
 
+  // set slected date 
   const handleDayClick = (day) => {
     const date = formatDate(viewYear, viewMonth, day);
     if (!rangeStart || (rangeStart && rangeEnd)) {
