@@ -10,10 +10,14 @@
   },
   "dependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "something": "^0.0.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^8.0.6"
+    "@vitejs/plugin-react": "^4.7.0",
+    "vite": "^7.3.2"
+  },
+  "engines": {
+    "node": "18"
   }
 }
