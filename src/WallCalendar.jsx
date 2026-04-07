@@ -47,23 +47,68 @@ function isBetween(date, start, end) {
   return date > s && date < e;
 }
 
+function getRangeKey(start, end) {
+  if (!start && !end) return null;
+  if (!end) return start;
+  const [s, e] = start < end ? [start, end] : [end, start];
+  return `${s}_${e}`;
+}
+
 export default function WallCalendar() {
+  const notesRef = useRef(null);
+  const calendarRef = useRef(null);
+
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [rangeStart, setRangeStart] = useState(null);
   const [rangeEnd, setRangeEnd] = useState(null);
   const [hoverDate, setHoverDate] = useState(null);
+  const [modalConfig, setModalConfig] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   
-  const [notes, setNotes] = useState(() => {
-    const saved = localStorage.getItem("calendarNotes");
-    return saved ? JSON.parse(saved) : Array(6).fill("");
+  const [savedNotesDict, setSavedNotesDict] = useState(() => {
+    const saved = localStorage.getItem("calendarNotesDict");
+    return saved ? JSON.parse(saved) : {};
   });
+
+  const [notes, setNotes] = useState(Array(6).fill(""));
   const [flippingClass, setFlippingClass] = useState("");
 
+  const currentKey = getRangeKey(rangeStart, rangeEnd);
+
   useEffect(() => {
-    localStorage.setItem("calendarNotes", JSON.stringify(notes));
-  }, [notes]);
+    if (currentKey) {
+      setNotes(savedNotesDict[currentKey] || Array(6).fill(""));
+    } else {
+      setNotes(Array(6).fill(""));
+    }
+  }, [currentKey]);
+
+  useEffect(() => {
+    localStorage.setItem("calendarNotesDict", JSON.stringify(savedNotesDict));
+  }, [savedNotesDict]);
+
+  const getNoteCountForDay = (dayStr) => {
+    if (!savedNotesDict) return 0;
+    let count = 0;
+    for (const key in savedNotesDict) {
+      const notesArr = savedNotesDict[key];
+      if (!Array.isArray(notesArr)) continue;
+      const validNotes = notesArr.filter(n => typeof n === 'string' && n.trim() !== "").length;
+      if (validNotes === 0) continue;
+
+      if (key === dayStr) {
+        count += validNotes;
+      } else if (key.includes("_")) {
+        const [start, end] = key.split("_");
+        if (dayStr >= start && dayStr <= end) {
+          count += validNotes;
+        }
+      }
+    }
+    return count;
+  };
   
   const monthImg = MONTH_IMAGES[viewMonth];
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
@@ -121,6 +166,36 @@ export default function WallCalendar() {
     setNotes(newNotes);
   };
 
+  const handleNoteFocus = (e) => {
+    if (!rangeStart) {
+      e.target.blur();
+      setModalConfig({
+        title: "Select a Date First",
+        message: "First of all, click the date or range when you want to take your notes actually!"
+      });
+    }
+  };
+
+  const handleSaveNotes = () => {
+    const isEmpty = notes.every(n => n.trim() === "");
+    if (isEmpty) {
+      setModalConfig({
+        title: "Notes Empty",
+        message: "The input field can't be empty! Please write some notes before saving."
+      });
+      return;
+    }
+
+    if (currentKey) {
+      setSavedNotesDict(prev => ({
+        ...prev,
+        [currentKey]: notes
+      }));
+      setShowSuccessModal(true);
+      setTimeout(() => setShowSuccessModal(false), 3000);
+    }
+  };
+
   const cells = [];
   
   for (let i = 0; i < firstDay; i++) {
@@ -176,11 +251,18 @@ export default function WallCalendar() {
                  <div className="hero-month">{MONTHS[viewMonth].toUpperCase()}</div>
               </div>
             </div>
+            
+            <button 
+              className="mobile-scroll-btn" 
+              onClick={() => calendarRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            >
+              Add Notes
+            </button>
           </div>
 
           <div className="cal-body">
             
-            <div className="notes-section">
+            <div className="notes-section" ref={notesRef}>
               <h3 className="notes-heading">Notes</h3>
               <div className="notes-lines">
                  {notes.map((note, i) => (
@@ -189,19 +271,23 @@ export default function WallCalendar() {
                      type="text" 
                      className="note-line" 
                      value={note}
-                     placeholder=""
+                     placeholder={rangeStart ? "Type here..." : "Click a date first..."}
                      onChange={(e) => updateNote(i, e.target.value)}
+                     onFocus={handleNoteFocus}
                    />
                  ))}
                  <div className="range-indicator">
-                    {(rangeStart || rangeEnd) ? (
-                      <button onClick={() => {setRangeStart(null); setRangeEnd(null)}} className="clear-btn">Clear Selection</button>
-                    ) : null}
+                    {currentKey && (
+                      <div className="note-actions">
+                        <button onClick={handleSaveNotes} className="clear-btn save-btn">Save Notes</button>
+                        <button onClick={() => {setRangeStart(null); setRangeEnd(null)}} className="clear-btn clear-btn-secondary">Clear Selection</button>
+                      </div>
+                    )}
                  </div>
               </div>
             </div>
 
-            <div className="grid-section">
+            <div className="grid-section" ref={calendarRef}>
                <div className="day-names">
                  {DAYS.map((d, i) => (
                    <div key={d} className={`day-name ${i >= 5 ? 'weekend' : ''}`}>{d}</div>
@@ -231,6 +317,8 @@ export default function WallCalendar() {
                     if (inHover) classes.push("in-range-hover");
                     if (isWeekendCol) classes.push("weekend-day");
 
+                    const noteCount = isCurrent ? getNoteCountForDay(dayStr) : 0;
+
                     return (
                       <div 
                         key={idx} 
@@ -240,6 +328,9 @@ export default function WallCalendar() {
                         onClick={() => isCurrent && handleDayClick(cell.day)}
                       >
                         <div className="day-number">{cell.day}</div>
+                        {noteCount > 0 && (
+                          <div className="note-badge">{noteCount}</div>
+                        )}
                       </div>
                     )
                  })}
@@ -249,6 +340,28 @@ export default function WallCalendar() {
           </div>
         </div>
       </div>
+
+      {modalConfig && (
+        <div className="modal-overlay" onClick={() => setModalConfig(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <h4>{modalConfig.title}</h4>
+            <p>{modalConfig.message}</p>
+            <button onClick={() => setModalConfig(null)} className="modal-close-btn">Got it</button>
+          </div>
+        </div>
+      )}
+
+      {showSuccessModal && (
+        <div className="modal-overlay" onClick={() => setShowSuccessModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="success-icon">✓</div>
+            <h4>Success!</h4>
+            <p>Your notes have been securely saved to this date.</p>
+            <button onClick={() => setShowSuccessModal(false)} className="modal-close-btn success-btn">Awesome</button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
