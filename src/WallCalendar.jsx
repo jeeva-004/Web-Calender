@@ -24,7 +24,30 @@ const MONTH_IMAGES = [
 ];
 
 const HOLIDAYS = {
-  "1-1": "New Year", "2-14": "Valentine's", "12-25": "Christmas"
+  // Format: "Month-Day": { name: "Event Name", isHoliday: boolean }
+  "1-1": { name: "New Year's Day", isHoliday: true },
+  "1-12": { name: "National Youth Day", isHoliday: false },
+  "1-14": { name: "Pongal/Makar Sankranti", isHoliday: true },
+  "1-15": { name: "Indian Army Day", isHoliday: false },
+  "1-23": { name: "Netaji Jayanti", isHoliday: false },
+  "1-24": { name: "National Girl Child Day", isHoliday: false },
+  "1-25": { name: "National Voters Day", isHoliday: false },
+  "2-14": { name: "Valentine's Day", isHoliday: false },
+  "2-28": { name: "National Science Day", isHoliday: false },
+  "3-4": { name: "Holi", isHoliday: true },
+  "3-8": { name: "International Women's Day", isHoliday: false },
+  "3-26": { name: "Rama Navami", isHoliday: true },
+  "3-31": { name: "Mahavir Jayanti", isHoliday: true },
+  "4-3": { name: "Good Friday", isHoliday: true },
+  "4-7": { name: "World Health Day", isHoliday: false },
+  "4-14": { name: "Ambedkar Jayanti", isHoliday: true },
+  "5-1": { name: "Labour Day", isHoliday: true },
+  "6-5": { name: "World Environment Day", isHoliday: false },
+  "8-15": { name: "Independence Day", isHoliday: true },
+  "9-14": { name: "Hindi Diwas", isHoliday: false },
+  "10-2": { name: "Gandhi Jayanti", isHoliday: true },
+  "11-14": { name: "Children's Day", isHoliday: false },
+  "12-25": { name: "Christmas Day", isHoliday: true }
 };
 
 // calculte days
@@ -66,6 +89,7 @@ export default function WallCalendar() {
   const [hoverDate, setHoverDate] = useState(null);
   const [modalConfig, setModalConfig] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   
   const [savedNotesDict, setSavedNotesDict] = useState(() => {
     const saved = localStorage.getItem("calendarNotesDict");
@@ -88,6 +112,14 @@ export default function WallCalendar() {
   useEffect(() => {
     localStorage.setItem("calendarNotesDict", JSON.stringify(savedNotesDict));
   }, [savedNotesDict]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const getNoteCountForDay = (dayStr) => {
     if (!savedNotesDict) return 0;
@@ -317,6 +349,9 @@ export default function WallCalendar() {
                     if (inHover) classes.push("in-range-hover");
                     if (isWeekendCol) classes.push("weekend-day");
 
+                    const holidayKey = isCurrent ? `${viewMonth + 1}-${cell.day}` : null;
+                    const holiday = holidayKey ? HOLIDAYS[holidayKey] : null;
+
                     const noteCount = isCurrent ? getNoteCountForDay(dayStr) : 0;
 
                     return (
@@ -326,8 +361,12 @@ export default function WallCalendar() {
                         onMouseEnter={() => isCurrent && setHoverDate(dayStr)}
                         onMouseLeave={() => isCurrent && setHoverDate(null)}
                         onClick={() => isCurrent && handleDayClick(cell.day)}
+                        data-holiday={holiday ? holiday.name : null}
                       >
                         <div className="day-number">{cell.day}</div>
+                        {holiday && (
+                          <div className={`holiday-dot ${holiday.isHoliday ? 'public' : 'important'}`} title={holiday.name}></div>
+                        )}
                         {noteCount > 0 && (
                           <div className="note-badge">{noteCount}</div>
                         )}
@@ -338,6 +377,61 @@ export default function WallCalendar() {
             </div>
 
           </div>
+        </div>
+      </div>
+
+      <div className="monthly-summary">
+        <div className="summary-header">
+          <h3>Notes Summary: {MONTHS[viewMonth]} {viewYear}</h3>
+        </div>
+        <div className="summary-content">
+          {(() => {
+            const monthNotes = [];
+            Object.keys(savedNotesDict).forEach(dateKey => {
+              const notesArr = savedNotesDict[dateKey];
+              const validNotes = notesArr.filter(n => n?.trim() !== "");
+              if (validNotes.length === 0) return;
+
+              // Handle single date key (YYYY-MM-DD)
+              if (!dateKey.includes("_")) {
+                const [y, m, d] = dateKey.split("-").map(Number);
+                if (y === viewYear && m === viewMonth + 1) {
+                  monthNotes.push({ date: `Day ${d}`, notes: validNotes, sortKey: d });
+                }
+              } else {
+                // Handle range key (YYYY-MM-DD_YYYY-MM-DD)
+                const [start, end] = dateKey.split("_");
+                const [sy, sm, sd] = start.split("-").map(Number);
+                const [ey, em, ed] = end.split("-").map(Number);
+                
+                // Show if range overlaps current month
+                const startM = sy * 12 + sm;
+                const endM = ey * 12 + em;
+                const currentM = viewYear * 12 + (viewMonth + 1);
+                
+                if (currentM >= startM && currentM <= endM) {
+                   monthNotes.push({ 
+                     date: `${sd}/${sm} - ${ed}/${em}`, 
+                     notes: validNotes,
+                     sortKey: sd // Sort by start day
+                   });
+                }
+              }
+            });
+
+            if (monthNotes.length === 0) {
+              return <p className="no-summary">No notes recorded for this month.</p>;
+            }
+
+            return monthNotes.sort((a,b) => a.sortKey - b.sortKey).map((item, idx) => (
+              <div key={idx} className="summary-item">
+                <div className="summary-date">{item.date}</div>
+                <div className="summary-text">
+                  {item.notes.map((n, i) => <div key={i} className="summary-text-line">• {n}</div>)}
+                </div>
+              </div>
+            ));
+          })()}
         </div>
       </div>
 
@@ -361,6 +455,14 @@ export default function WallCalendar() {
           </div>
         </div>
       )}
+
+      <button 
+        className={`back-to-top ${showBackToTop ? 'visible' : ''}`} 
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="Back to top"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+      </button>
 
     </div>
   );
